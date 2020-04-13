@@ -1,0 +1,4 @@
+project4-venv/
+.idea/
+.vscode/
+__pycache__/
