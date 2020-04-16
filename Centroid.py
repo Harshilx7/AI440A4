@@ -34,5 +34,7 @@ class Centroid:
 		else:
 			row, col = self.list.shape
 			self.color = self.total / row
-			self.list = np.array([[-1, -1, -1]])
 			self.total = np.array([0, 0, 0])
+
+	def restartList(self):
+		self.list = np.array([[-1, -1, -1]])

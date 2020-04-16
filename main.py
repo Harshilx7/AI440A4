@@ -1,3 +1,4 @@
+from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 from matplotlib import image
 from utilities import *
@@ -18,7 +19,6 @@ def main():
 	cluster = getAverageOfCluster(cluster)
 	print(cluster)
 	train(data, numCentroid)
-
 	print("Done")
 	# plt.imshow(data)
 	# plt.show()

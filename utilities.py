@@ -1,5 +1,7 @@
 import random
 import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
 from Centroid import *
 
 
@@ -60,6 +62,11 @@ def printCentroidList(centroids):
 		print(centroids[i].color)
 
 
+def restartList(centroids):
+	for i in range(len(centroids)):
+		centroids[i].restartList()
+
+
 def train(data, numCentroid):
 	row, col, _ = data.shape
 	train_data = data[:, :int(col / 2)]
@@ -81,6 +88,11 @@ def train(data, numCentroid):
 		updateCentroidList(centroids)
 
 		printCentroidList(centroids)
+		plotCurrIteration(centroids)
+
+		restartList(centroids)
+
+
 
 
 def lossFunction():
@@ -143,3 +155,27 @@ def gray(rgb):
 	r, g, b = rgb
 	n = int((0.21 * r) + (0.72 * g) + (0.07 * b))
 	return [n] * 3
+
+
+def plotCurrIteration(centroids):
+	fig = plt.figure()
+	ax = fig.add_subplot(111, projection='3d')
+
+	for i in range(len(centroids)):
+
+		color = centroids[i].color / 255
+		color = (color[0], color[1], color[2])
+		l = centroids[i].list
+		if np.array_equal(l[0], [-1, -1, -1]):
+			continue
+		row, col = l.shape
+		r = tuple(l[:, 0].tolist())
+		g = tuple(l[:, 1].tolist())
+		b = tuple(l[:, 2].tolist())
+		ax.scatter(r, g, b, c=color)
+
+		ax.set_xlabel('R')
+		ax.set_ylabel('G')
+		ax.set_zlabel('B')
+
+	plt.show()
