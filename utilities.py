@@ -67,8 +67,11 @@ def restartList(centroids):
 		centroids[i].restartList()
 
 
-def train(data, numCentroid):
+def train(data, numCentroid, borderSize):
 	row, col, _ = data.shape
+	# removes borders from calculations
+	row = row - (borderSize*2)
+	col = col - (borderSize*2)
 	train_data = data[:, :int(col / 2)]
 	col = int(col / 2)  # New col for the split image
 
@@ -80,8 +83,8 @@ def train(data, numCentroid):
 		dictionary = {}
 
 		# First, we find the closest centroid to each point in the training set
-		for i in range(row):
-			for j in range(col):
+		for i in range(borderSize, row):
+			for j in range(borderSize, col):
 				findClosestCentroid(train_data[i][j], centroids, dictionary)
 
 		# Second, we update the centroid values
@@ -112,38 +115,46 @@ def getAverageOfCluster(cluster):
 
 
 #
+# adds border around the picture
+#
+# data: pixels of photo
+# clusterDim: cluster dimension
+#
+def addBorder(data, clusterDim=3):
+	white = [255, 255, 255]
+
+	border = [white for i in range(int(np.ceil(clusterDim/2))-1)]
+	border = np.reshape(border, (-1, 1, 3))
+	data = np.array(data)
+
+	# inserts borders
+	data = np.insert(data, 0, border, axis=0)
+	data = np.insert(data, 0, border, axis=1)
+	data = np.insert(data, len(data), border, axis=0)
+	data = np.insert(data, len(data[0]), border, axis=1)
+
+	return data
+
+
+#
 # gives a 3x3 cluster with the given
 # pixel in the center
 #
 # coordinate: location of pixel
-# dimensions: size of the photo in pixels
+# data: pixels of photo
+# clusterDim: cluster dimension
 #
-def getCluster(coordinate, data):
-	x, y = coordinate
-	x_max, y_max, _ = data.shape
+def getCluster(coordinate, data, clusterDim=3):
+	row, col = coordinate
+	borderSize = int(np.ceil(clusterDim/2)) - 1
 	cluster = []
-	left = y - 1 >= 0
-	right = y + 1 < y_max
+	[[cluster.append(data[row-i][col+j-borderSize]) for j in range(0, clusterDim)] for i in range(borderSize, 0, -1)]
+	[[cluster.append(data[row+i][col+j-borderSize]) for j in range(0, clusterDim)] for i in range(0, borderSize+1)]
 
-	temp = []
-	if x - 1 >= 0:
-		if left: temp.append(data[x - 1][y - 1])
-		temp.append(data[x - 1][y])
-		if right: temp.append(data[x - 1][y + 1])
-	if temp: cluster.append(temp)
-	temp = []
-	if left: temp.append(data[x][y - 1])
-	temp.append(data[x][y])
-	if right: temp.append(data[x][y + 1])
-	if temp: cluster.append(temp)
-	temp = []
-	if x + 1 < x_max:
-		if left: temp.append(data[x + 1][y - 1])
-		temp.append(data[x + 1][y])
-		if right: temp.append(data[x + 1][y + 1])
-	if temp: cluster.append(temp)
+	cluster = np.array(cluster)
+	cluster = np.reshape(cluster, (clusterDim, clusterDim, 3))
 
-	return np.array(cluster)
+	return cluster
 
 
 #

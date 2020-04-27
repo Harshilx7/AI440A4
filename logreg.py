@@ -4,14 +4,12 @@ from matplotlib import image
 from utilities import *
 
 
-
 #
 # Returns an array containing R,G,B clustered weight distributions by iterating through training data.
 # n: cluster layers (must be at least 1)
 # data: image data (RGB)
 #
-
-def get_rgb(data,n):
+def get_rgb(data, n):
     row, col, _ = data.shape
     col = int(col / 2)
     train_data = data[:, :col]
@@ -29,11 +27,9 @@ def get_rgb(data,n):
     return rgb_arr
 
 
-
 #
 # Returns means of different sized clusters, based on number of layers provided
 #
-
 def n_cluster(coord,data,layers):
     x,y = coord
     r,g,b = data[x][y]
@@ -50,11 +46,9 @@ def n_cluster(coord,data,layers):
     return np.rint(cluster_means)
 
 
-
 #
 # Returns average of cluster given data about previous layer
 #
-
 def cluster_avg(prevmean, prevnum, layer, x_max, y_max, coord, data):
     x,y = coord
     currnum = 0

@@ -8,18 +8,23 @@ def main():
 	data = image.imread('test_image.jpg')
 	data = np.array(data)
 	numCentroid = 5  # 5 classes for k-means
+	clusterDim = 3  # cluster dimension
+	borderSize = int(np.ceil(clusterDim / 2)) - 1
+
+	newData = addBorder(data, clusterDim)
 
 	# makes the colored picture into grayscale
 	# newData = [[gray(y) for y in x]for x in data]
 	# newData = np.array(newData)
 
 	# change data to newData if changing from colored to grayscale
-	cluster = getCluster((1, 1), data)
+	cluster = getCluster((2, 2), newData, clusterDim)
+	print(cluster.shape)
 	print(cluster)
 	cluster = getAverageOfCluster(cluster)
 	print(cluster)
-	train(data, numCentroid)
-	print("Done")
+	train(newData, numCentroid, borderSize)
+	# print("Done")
 	# plt.imshow(data)
 	# plt.show()
 
