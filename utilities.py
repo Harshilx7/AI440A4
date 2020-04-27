@@ -69,9 +69,12 @@ def restartList(centroids):
 
 def train(data, numCentroid, borderSize):
 	row, col, _ = data.shape
+	print(data.shape)
 	# removes borders from calculations
-	row = row - (borderSize*2)
-	col = col - (borderSize*2)
+	row = row - borderSize
+	col = col - borderSize
+	print(row)
+	print(col)
 	train_data = data[:, :int(col / 2)]
 	col = int(col / 2)  # New col for the split image
 
@@ -86,7 +89,6 @@ def train(data, numCentroid, borderSize):
 		for i in range(borderSize, row):
 			for j in range(borderSize, col):
 				findClosestCentroid(train_data[i][j], centroids, dictionary)
-
 		# Second, we update the centroid values
 		updateCentroidList(centroids)
 
