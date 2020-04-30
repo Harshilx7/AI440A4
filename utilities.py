@@ -1,8 +1,4 @@
-import random
 from bisect import bisect_left
-
-import numpy as np
-from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 from Centroid import *
 
@@ -147,16 +143,12 @@ def convertGrayToColor(gray_train, gray_test, centroids, train_dict, data):
 			data[i][j + col] = centroid_color  # j + col since col is the size of the train and test data
 
 
-
-	pass
-
-
 # Finds 6 gray colors on the Training side that is most similar to newGray
 def get6ClosestColors(sortedTrainData, newGray, train_dict, data):
 	ind = np.searchsorted(sortedTrainData, newGray)
 	size = int(sortedTrainData.shape[0])
 
-	left, right = 0, 0  # Used as the boundries to receive 7 closest. 7 because of indexing issues
+	left, right = 0, 0  # Used as the boundaries to receive 7 closest. 7 because of indexing issues
 	if ind - 4 < 0:
 		left = 0
 		right = 7
@@ -234,7 +226,7 @@ def getAverageOfCluster(cluster):
 	tot = 0
 	for i in range(len(cluster)):
 		for j in range(len(cluster[i])):
-			tot += gray2(tuple(cluster[i][j]))
+			tot += gray(tuple(cluster[i][j]))
 
 	size = len(cluster) * len(cluster[0])
 	return tot / size
@@ -243,6 +235,7 @@ def getAverageOfCluster(cluster):
 # Takes data as a 3d list with rgb values and returns an np array of the same list in gray scale
 def convertToGrayScale(data):
 	row, col, _ = data.shape
+
 	gray_scale_image = []
 	train_dict = {}
 
@@ -250,10 +243,9 @@ def convertToGrayScale(data):
 		image_row = []
 
 		for j in range(int(col/2)):
-			cluster = getCluster((i,j), data)
+			cluster = getCluster((i, j), data)
 			val = getAverageOfCluster(cluster)
-
-			# val = gray2(tuple(data[i][j]))
+			# val = gray(tuple(data[i][j]))
 
 			if val in train_dict:
 				train_dict[val].append([i, j])
@@ -266,12 +258,71 @@ def convertToGrayScale(data):
 			cluster = getCluster((i, j), data)
 			val = getAverageOfCluster(cluster)
 
-			# val = gray2(tuple(data[i][j]))
+			# val = gray(tuple(data[i][j]))
 			image_row.append(val)
 
 		gray_scale_image.append(image_row)
 
 	return np.array(gray_scale_image), train_dict
+
+
+def lossFunction():
+	pass
+
+
+# def getAverageOfCluster(cluster):
+# 	x, y, z = 0, 0, 0
+# 	for i in range(len(cluster)):
+# 		for j in range(len(cluster[i])):
+# 			x += cluster[i][j][0]
+# 			y += cluster[i][j][1]
+# 			z += cluster[i][j][2]
+#
+# 	size = len(cluster) * len(cluster[0])
+# 	return [round(x / size), round(y / size), round(z / size)]
+
+
+#
+# adds border around the picture
+#
+# data: pixels of photo
+# clusterDim: cluster dimension
+#
+def addBorder(data, clusterDim=3):
+	white = [255, 255, 255]
+
+	border = [white for i in range(int(np.ceil(clusterDim/2))-1)]
+	border = np.reshape(border, (-1, 1, 3))
+	data = np.array(data)
+
+	# inserts borders
+	data = np.insert(data, 0, border, axis=0)
+	data = np.insert(data, 0, border, axis=1)
+	data = np.insert(data, len(data), border, axis=0)
+	data = np.insert(data, len(data[0]), border, axis=1)
+
+	return data
+
+
+# #
+# # gives a 3x3 cluster with the given
+# # pixel in the center
+# #
+# # coordinate: location of pixel
+# # data: pixels of photo
+# # clusterDim: cluster dimension
+# #
+# def getCluster(coordinate, data, clusterDim=3):
+# 	row, col = coordinate
+# 	borderSize = int(np.ceil(clusterDim/2)) - 1
+# 	cluster = []
+# 	[[cluster.append(data[row-i][col+j-borderSize]) for j in range(0, clusterDim)] for i in range(borderSize, 0, -1)]
+# 	[[cluster.append(data[row+i][col+j-borderSize]) for j in range(0, clusterDim)] for i in range(0, borderSize+1)]
+#
+# 	cluster = np.array(cluster)
+# 	cluster = np.reshape(cluster, (clusterDim, clusterDim, 3))
+#
+# 	return cluster
 
 
 #
@@ -315,12 +366,6 @@ def getCluster(coordinate, data):
 # rgb: rgb values of the pixel
 #
 def gray(rgb):
-	r, g, b = rgb
-	n = int((0.21 * r) + (0.72 * g) + (0.07 * b))
-	return [n] * 3
-
-
-def gray2(rgb):
 	r, g, b = rgb
 	n = (0.21 * r) + (0.72 * g) + (0.07 * b)
 	return n * 3
