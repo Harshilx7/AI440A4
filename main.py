@@ -5,7 +5,7 @@ from utilities import *
 def main():
 	data = image.imread('test_image.jpg')
 	data = np.array(data)
-	numCentroid = 5  # 5 classes for k-means
+	numCentroid = 30  # 5 classes for k-means
 	clusterDim = 3  # cluster dimension
 	# borderSize = int(np.ceil(clusterDim / 2)) - 1
 
@@ -24,8 +24,8 @@ def main():
 	# train(newData, numCentroid, borderSize)
 	basicAgent(data, numCentroid)
 	# print("Done")
-	plt.imshow(data)
-	plt.show()
+	# plt.imshow(data)
+	# plt.show()
 
 
 if __name__ == '__main__':
