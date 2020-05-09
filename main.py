@@ -1,28 +1,22 @@
 from matplotlib import image
 from utilities import *
+from NN import trainNN
 
 
 def main():
 	data = image.imread('test_image.jpg')
 	data = np.array(data)
-	numCentroid = 30  # 5 classes for k-means
-	clusterDim = 3  # cluster dimension
-	# borderSize = int(np.ceil(clusterDim / 2)) - 1
+	numCentroid = 5  # 5 classes for k-means
 
-	# newData = addBorder(data, clusterDim)
+	# Find centroids by calling train
+	centroids = train(data, numCentroid)
+	centroidList = []
+	for c in centroids:
+		centroidList.append(c.color.tolist())
 
-	# makes the colored picture into grayscale
-	# newData = [[gray(y) for y in x]for x in data]
-	# newData = np.array(newData)
+	basicAgent(data, numCentroid, centroids)
 
-	# change data to newData if changing from colored to grayscale
-	# cluster = getCluster((2, 2), newData, clusterDim)
-	# print(cluster.shape)
-	# print(cluster)
-	# cluster = getAverageOfCluster(cluster)
-	# print(cluster)
-	# train(newData, numCentroid, borderSize)
-	basicAgent(data, numCentroid)
+	trainNN(128, 3, 0.001, 9, centroidList, data, 10)
 	# print("Done")
 	# plt.imshow(data)
 	# plt.show()
