@@ -15,7 +15,7 @@ def sigmoid(x,deriv):
         return sigmoid(x,False)*sigmoid((1-x),False)
 
 # Returns the softmax function output of the given input, accounting for
-# numerical stability by subtracting np.max(x)
+# numerical stability by subtracting the average of the two maximums
 # x: layer array
 def softmax(x):
     max_i = heapq.nlargest(2,range(len(x)),x.take)
@@ -30,13 +30,13 @@ def cross_ent_deriv(y, y_real):
     return (y-y_real)/(len(y_real))
 
 # Returns error between the predicted and real output value arrays, using the cross 
-# entropy loss function dC/dl_i = -y_real*log(y) 
+# entropy loss function L = -y_real*log(y) (since y_real is one hot encoded, we can 
+# simply use L = -log(y_m) where m is the index of the max of y_real)
 # y: predicted output array
 # y_real: actual output array
 def loss(y, y_real):
-    n = len(y_real)
-    logval = -(y_real*np.log(y))
-    loss = np.sum(logval)/n
+    max_i = heapq.nlargest(1,range(len(y_real)),y_real.take)
+    loss  = -np.log(y[max_i])
     return loss
 
 def basicDist(color,color_real):
@@ -201,17 +201,24 @@ def backprop(g,w,b,layers,y_real,rate):
 # centroids: list of centroids
 # data: image data
 # iter: number of times to iterate over image data
-def trainNN(size,layers,rate,pix_in,centroids,data,iter):
+# useAvg: boolean that says whether or not to take average of 3 highest probability 
+# centroids
+def trainNN(size,layers,rate,pix_in,centroids,data,iter,useAvg):
+    prevacc = 0
+    n,bad = 0,0
     w,b = initializeNN(size,layers,pix_in,centroids)
     centroiderr = []
     train_data,output = get_datasets(centroids,data)
     print("Training with %i patches" % len(train_data))
-    for n in range(iter):
+    while(n<iter and bad<2):
         for i in range(len(train_data)):
             g = forwardprop(w,b,layers,train_data[i])
             w,b,loss = backprop(g,w,b,layers,output[i],rate)
         print("Iteration %i complete" % n)
-        curacc = predict_img(w,b,layers,loss,data,centroids)
+        prevacc,cont = predict_img(w,b,layers,loss,data,centroids,useAvg,prevacc)
+        if not cont:
+            bad+=1
+        n+=1
     print("Finished training")
 
 # Uses NN to make a prediction for the RGB value of the given grayscale cluster's 
@@ -251,9 +258,12 @@ def predict(w,b,layers,centroids,cluster,avg):
         return mapto1(centroids[max_i[0]])
     
 # Uses NN to make predictions for the right half of the image given, and shows the 
-# corresponding combined image
+# corresponding combined image if accuracy has increased
 # Loss: Cross Entropy loss calcualted from backprop
-def predict_img(w,b,layers,loss,data,centroids):
+# useAvg: boolean that says whether or not to take average of 3 highest probability 
+# centroids
+# prevacc: previous accuracy
+def predict_img(w,b,layers,loss,data,centroids,useAvg,prevacc):
     print("Starting predictions")
     row, col, _ = data.shape
     newimg = []
@@ -268,7 +278,7 @@ def predict_img(w,b,layers,loss,data,centroids):
             else:
                 cluster = getGrayCluster(data,(i, j))
                 center_pix = cluster[4]
-                color = predict(w,b,layers,centroids,cluster,False)
+                color = predict(w,b,layers,centroids,cluster,useAvg)
                 realcolor = mapto1(data[i][j])
                 #out_arr = get_pix_out(centroids,data[i][j],pix_dict)
                 #realcentroid = mapto1(centroids[np.argmax(out_arr)])
@@ -280,12 +290,14 @@ def predict_img(w,b,layers,loss,data,centroids):
     print("Predictions complete")
     acc = sum(diffs)/len(diffs)
     print("Acc: %.5f %%" % (100*(1-acc)))
-    #if(100*(1-acc)>95):    
-    plt.imshow(np.array(newimg))
-    plt.title("Centroids: %i Loss: %.5f Accuracy: %.5f %%" % 
-    (len(centroids),loss,100*(1-acc)))
-    plt.show()
-    return 100*(1-acc)
+    if(acc>prevacc):  
+        plt.imshow(np.array(newimg))
+        plt.title("Centroids: %i Loss: %.5f Accuracy: %.5f %%" % 
+        (len(centroids),loss,100*(1-acc)))
+        plt.show()
+        return 100*(1-acc),True
+    else:
+        return 100*(1-acc),False
 
 
 
