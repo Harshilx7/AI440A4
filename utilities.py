@@ -133,6 +133,7 @@ def basicAgent(data, numCentroid):
 																								   str(accuracy)))
 	plt.imshow(data)
 	plt.show()
+	return centroids
 
 
 def calcLoss(copy, data, centroids):
@@ -406,7 +407,7 @@ def getCluster(coordinate, data):
 def gray(rgb):
 	r, g, b = rgb
 	n = (0.21 * r) + (0.72 * g) + (0.07 * b)
-	return n * 3
+	return n
 
 
 def plotCurrIteration(centroids):
