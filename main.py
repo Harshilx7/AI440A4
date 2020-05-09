@@ -14,12 +14,10 @@ def main():
 	for c in centroids:
 		centroidList.append(c.color.tolist())
 
-	basicAgent(data, numCentroid, centroids)
+	#basicAgent(data, numCentroid, centroids)
 
-	trainNN(128, 3, 0.001, 9, centroidList, data, 10)
-	# print("Done")
-	# plt.imshow(data)
-	# plt.show()
+	#improved agent using NN
+	trainNN(270, 3, 0.001, 9, centroidList, data, 10)
 
 
 if __name__ == '__main__':
