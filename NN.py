@@ -49,7 +49,7 @@ def mapto1(color):
 
 # Splits the image data into the training and testing data sets.
 # Data: image array 
-def get_datasets(centroids,data):
+def get_datasets(centroids,data,weights):
     print("Building training dataset")
     centroids = centroids
     row, col, _ = data.shape
@@ -60,7 +60,7 @@ def get_datasets(centroids,data):
     for i in range(1,row-1):
         for j in range(1,int(col/2)):
             cluster = getGrayCluster(data,(i, j))
-            out_arr = get_pix_out(centroids,data[i][j],pix_dict)
+            out_arr = get_pix_out(centroids,data[i][j],pix_dict,weights)
             list1.append((cluster,out_arr)) 
 
     #randomize training data
@@ -87,7 +87,8 @@ def getGrayCluster(data,coord):
 # the entry with the index of the closest centroid to color, whose value will be 1. 
 # Centroids: list of centroids
 # color: true RGB color of the center pixel of the training patch 
-def get_pix_out(centroids,color,pix_dict):
+# weights: boolean determining whether or not to use weighted closest distance
+def get_pix_out(centroids,color,pix_dict,weights):
     pix_out = np.zeros(len(centroids))
     minCentroid = ()
 
@@ -99,11 +100,11 @@ def get_pix_out(centroids,color,pix_dict):
     # Add new color to dictionary if not present 
     else:
         #minDist = calcDistance(centroids[0].color, color)
-        minDist = calcDistance(centroids[0],color,True)
+        minDist = calcDistance(centroids[0],color,weights)
         minCentroid = centroids[0]
         for i in range(1, len(centroids)):
             #dist = calcDistance(centroids[i].color, color)
-            dist = calcDistance(centroids[i],color,True)
+            dist = calcDistance(centroids[i],color,weights)
             if dist < minDist:
                 minDist = dist
                 minCentroid = centroids[i]
@@ -197,29 +198,46 @@ def backprop(g,w,b,layers,y_real,rate):
 # size: number of nodes per layer
 # layers: number of layers
 # rate: learning rate
-# pix_in: number of input features (generally 9)
 # centroids: list of centroids
 # data: image data
 # iter: number of times to iterate over image data
 # useAvg: boolean that says whether or not to take average of 3 highest probability 
 # centroids
-def trainNN(size,layers,rate,pix_in,centroids,data,iter,useAvg):
-    prevacc = 0
-    n,bad = 0,0
+# weights: boolean determining whether or not to use weighted closest distance
+def trainNN(size,layers,rate,iter,centroids,data,useAvg,weights):
+    pix_in = 9
+    prevacc,n,bad = 0,0,0
+    accs = []
+    imgs = []
     w,b = initializeNN(size,layers,pix_in,centroids)
-    centroiderr = []
-    train_data,output = get_datasets(centroids,data)
+    train_data,output = get_datasets(centroids,data,weights)
     print("Training with %i patches" % len(train_data))
     while(n<iter and bad<2):
+        print("Starting iteration %i" % (n+1))
         for i in range(len(train_data)):
             g = forwardprop(w,b,layers,train_data[i])
             w,b,loss = backprop(g,w,b,layers,output[i],rate)
-        print("Iteration %i complete" % n)
-        prevacc,cont = predict_img(w,b,layers,loss,data,centroids,useAvg,prevacc)
+        print("Iteration %i complete" % (n+1))
+        acc,newimg,cont = predict_img(w,b,layers,loss,data,centroids,useAvg,
+        prevacc)
+        prevacc = acc
         if not cont:
             bad+=1
+        accs.append(prevacc)
+        imgs.append(newimg)
         n+=1
     print("Finished training")
+    accs = np.array(accs)
+    max_i = heapq.nlargest(1,range(len(accs)),accs.take)[0]
+    img,bestiter,acc = imgs[max_i],max_i,accs[max_i]
+    plt.imshow(np.array(img))
+    if useAvg: useAvg = "T"
+    else: useAvg = "F"
+    if weights: weights = "T"
+    else: weights = "F"
+    plt.title("Advanced agent with rate = %.5f, useAvg = %s, weights = %s\nIter: %i Centroids: %i Loss: %.5f Accuracy: %.5f %%" 
+    % (rate,useAvg,weights,bestiter+1,len(centroids),loss,acc))
+    plt.show()
 
 # Uses NN to make a prediction for the RGB value of the given grayscale cluster's 
 # center.
@@ -288,16 +306,13 @@ def predict_img(w,b,layers,loss,data,centroids,useAvg,prevacc):
                 diffs.append(error)
         newimg.append(imgrow)
     print("Predictions complete")
-    acc = sum(diffs)/len(diffs)
-    print("Acc: %.5f %%" % (100*(1-acc)))
+    diff = sum(diffs)/len(diffs)
+    acc = (100*(1-diff))
+    print("Acc: %.5f %%" % acc)
     if(acc>prevacc):  
-        plt.imshow(np.array(newimg))
-        plt.title("Centroids: %i Loss: %.5f Accuracy: %.5f %%" % 
-        (len(centroids),loss,100*(1-acc)))
-        plt.show()
-        return 100*(1-acc),True
+        return acc,newimg,True
     else:
-        return 100*(1-acc),False
+        return acc,newimg,False
 
 
 
