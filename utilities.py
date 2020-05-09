@@ -1,6 +1,5 @@
-from bisect import bisect_left
+from bisect import bisect_right
 from copy import deepcopy
-
 import matplotlib.pyplot as plt
 from Centroid import *
 
@@ -14,7 +13,7 @@ def calcDistance(rgb1, rgb2, weights):
 
 	if weights:
 		wX = 0.21
-		wY = 0.9
+		wY = 0.72
 		wZ = 0.07
 
 	return (wX * (x1 - x2) ** 2) + (wY * (y1 - y2) ** 2) + (wZ * (z1 - z2) ** 2)
@@ -30,9 +29,20 @@ def calcBasicDistance(rgb1, rgb2):
 
 # Returns the initial random values for the centroids by [r,g,b]
 def randomSelection(numCentroid):
-	i = 0
+	i = 5
 	centroidsDict = {}
 	centroids = []
+	if numCentroid >= 5:  # Initizlies the first 5 centroids to be extreme colors: Red, Blue, Green, Black, White
+		centroids.append(Centroid([255, 0, 0]))  # Red
+		centroids.append(Centroid([0, 255, 0]))  # Green
+		centroids.append(Centroid([0, 0, 255]))  #
+		centroids.append(Centroid([255, 255, 255]))
+		centroids.append(Centroid([0, 0, 0]))
+		centroidsDict[(255, 0, 0)] = True
+		centroidsDict[(0, 255, 0)] = True
+		centroidsDict[(0, 0, 255)] = True
+		centroidsDict[(255, 255, 255)] = True
+		centroidsDict[(0, 0, 0)] = True
 	while i < numCentroid:
 		x = random.random() * 255
 		y = random.random() * 255
@@ -47,6 +57,7 @@ def randomSelection(numCentroid):
 	return centroids
 
 
+# Finds closest centroid given a color
 def findClosestCentroid(color, centroids, dictionary, addToList):
 	strColor = np.array2string(color)
 	if strColor in dictionary:
@@ -70,21 +81,25 @@ def findClosestCentroid(color, centroids, dictionary, addToList):
 	return minCentroid
 
 
+# Updates the centroid list
 def updateCentroidList(centroids):
 	for i in range(len(centroids)):
 		centroids[i].updateCentroid()
 
 
+# Prints all colors in the centroid
 def printCentroidList(centroids):
 	for i in range(len(centroids)):
 		print(centroids[i].color)
 
 
+# Deletes every saved color in each centroid. Doesn't delete the color itself
 def restartList(centroids):
 	for i in range(len(centroids)):
 		centroids[i].restartList()
 
 
+# Training the k-means
 def train(data, numCentroid):
 	row, col, _ = data.shape
 	train_data = data[:, :int(col / 2)]
@@ -105,20 +120,20 @@ def train(data, numCentroid):
 
 		# Second, we update the centroid values
 		updateCentroidList(centroids)
+		# if (it + 1) % 10 == 0:
+		# 	plotCurrIteration(centroids)
+		# 	printCentroidList(centroids)
 
 		restartList(centroids)
 
 	print("Finished Finding Centroids")
-
+	# plotCurrIteration(centroids)
 	return centroids
 
 
-def basicAgent(data, numCentroid):
+def basicAgent(data, numCentroids, centroids):
 	# Save a copy of the data
 	copy = np.array(deepcopy(data))
-
-	# Find centroids by calling train
-	centroids = train(data, numCentroid)
 
 	# Start coloring the Test Data
 	colorTestData(data, centroids)
@@ -128,13 +143,14 @@ def basicAgent(data, numCentroid):
 	accuracy = (768 - loss) / 768
 
 	# Plot the updated image
-	plt.title("Basic Agent: With Weights\nNumber of Centroids: {0} Loss: {1} Accuracy: {2}".format(str(numCentroid),
+	plt.title("Basic Agent: With Weights\nNumber of Centroids: {0} Loss: {1} Accuracy: {2}".format(str(numCentroids),
 																								   str(loss),
 																								   str(accuracy)))
 	plt.imshow(data)
 	plt.show()
 
 
+# Calculating loss by comparing what the centroid should be vs what centroid was chosen
 def calcLoss(copy, data, centroids):
 	print("Calculating Accuracy")
 	row, col, _ = copy.shape
@@ -144,11 +160,13 @@ def calcLoss(copy, data, centroids):
 			col1 = findClosestCentroid(copy[i][j], centroids, {}, False).color
 			col1 = [int(col1[0]), int(col1[1]), int(col1[2])]
 			col2 = data[i][j]
+
 			val += calcBasicDistance(col1, col2)
 
 	return round(val / (row * (int(col / 2))), 2)
 
 
+# Starts the coloring process
 def colorTestData(data, centroids):
 	print("Converting data to gray scale")
 	gray_scale_image, train_dict = convertToGrayScale(data)
@@ -163,6 +181,7 @@ def colorTestData(data, centroids):
 	print("Finished converting testing data from gray scale to color")
 
 
+# Starts the recoloring process on the testing side
 def convertGrayToColor(gray_train, gray_test, centroids, train_dict, data):
 	# Sorted version of training data. Allows for quick access to the 6 closest grayscale colors
 	sortedTrainData = np.sort(gray_train.flatten())
@@ -216,7 +235,7 @@ def get6ClosestColors(sortedTrainData, newGray, train_dict, data):
 
 	finalColors = []
 	keys = [r[0] for r in cornerArr]
-	newInd = bisect_left(keys, newGray)
+	newInd = bisect_right(keys, newGray)
 
 	size = newInd
 	if newInd - 3 < 0:
@@ -240,6 +259,7 @@ def get6ClosestColors(sortedTrainData, newGray, train_dict, data):
 	return finalColors
 
 
+# Gets the best color using the 6 closest centroids
 def getApproxColorUsing6Closest(colors, centroids):
 	cent_dict = {}
 	for i in range(len(colors)):
@@ -260,6 +280,7 @@ def getApproxColorUsing6Closest(colors, centroids):
 	return max_centroid.color
 
 
+# Averages the elements of the entire cluster and takes its grayscale value
 def getAverageOfCluster(cluster):
 	tot = 0
 	for i in range(len(cluster)):
@@ -281,9 +302,9 @@ def convertToGrayScale(data):
 		image_row = []
 
 		for j in range(int(col / 2)):
-			cluster = getCluster((i, j), data)
-			val = getAverageOfCluster(cluster)
-			# val = gray(tuple(data[i][j]))
+			# cluster = getCluster((i, j), data)
+			# val = getAverageOfCluster(cluster)
+			val = gray(tuple(data[i][j]))
 
 			if val in train_dict:
 				train_dict[val].append([i, j])
@@ -293,74 +314,15 @@ def convertToGrayScale(data):
 			image_row.append(val)
 
 		for j in range(int(col / 2), col):
-			cluster = getCluster((i, j), data)
-			val = getAverageOfCluster(cluster)
+			# cluster = getCluster((i, j), data)
+			# val = getAverageOfCluster(cluster)
 
-			# val = gray(tuple(data[i][j]))
+			val = gray(tuple(data[i][j]))
 			image_row.append(val)
 
 		gray_scale_image.append(image_row)
 
 	return np.array(gray_scale_image), train_dict
-
-
-def lossFunction():
-	pass
-
-
-# def getAverageOfCluster(cluster):
-# 	x, y, z = 0, 0, 0
-# 	for i in range(len(cluster)):
-# 		for j in range(len(cluster[i])):
-# 			x += cluster[i][j][0]
-# 			y += cluster[i][j][1]
-# 			z += cluster[i][j][2]
-#
-# 	size = len(cluster) * len(cluster[0])
-# 	return [round(x / size), round(y / size), round(z / size)]
-
-
-#
-# adds border around the picture
-#
-# data: pixels of photo
-# clusterDim: cluster dimension
-#
-def addBorder(data, clusterDim=3):
-	white = [255, 255, 255]
-
-	border = [white for i in range(int(np.ceil(clusterDim / 2)) - 1)]
-	border = np.reshape(border, (-1, 1, 3))
-	data = np.array(data)
-
-	# inserts borders
-	data = np.insert(data, 0, border, axis=0)
-	data = np.insert(data, 0, border, axis=1)
-	data = np.insert(data, len(data), border, axis=0)
-	data = np.insert(data, len(data[0]), border, axis=1)
-
-	return data
-
-
-# #
-# # gives a 3x3 cluster with the given
-# # pixel in the center
-# #
-# # coordinate: location of pixel
-# # data: pixels of photo
-# # clusterDim: cluster dimension
-# #
-# def getCluster(coordinate, data, clusterDim=3):
-# 	row, col = coordinate
-# 	borderSize = int(np.ceil(clusterDim/2)) - 1
-# 	cluster = []
-# 	[[cluster.append(data[row-i][col+j-borderSize]) for j in range(0, clusterDim)] for i in range(borderSize, 0, -1)]
-# 	[[cluster.append(data[row+i][col+j-borderSize]) for j in range(0, clusterDim)] for i in range(0, borderSize+1)]
-#
-# 	cluster = np.array(cluster)
-# 	cluster = np.reshape(cluster, (clusterDim, clusterDim, 3))
-#
-# 	return cluster
 
 
 #
@@ -406,16 +368,17 @@ def getCluster(coordinate, data):
 def gray(rgb):
 	r, g, b = rgb
 	n = (0.21 * r) + (0.72 * g) + (0.07 * b)
-	return n * 3
+	return n
 
 
+# Plots the centroids list. Look at graphs 12 - 16
 def plotCurrIteration(centroids):
 	fig = plt.figure()
 	ax = fig.add_subplot(111, projection='3d')
 
 	for i in range(len(centroids)):
 
-		color = centroids[i].color / 255
+		color = centroids[i].color / 255.0
 		color = (color[0], color[1], color[2])
 		l = centroids[i].list
 		if np.array_equal(l[0], [-1, -1, -1]):
